@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 // All the names related to the tokens
-enum Type {
+enum TYPE {
     CONST,
     TYPE,
     INTEGER,
@@ -50,3 +50,24 @@ struct Token {
     char value[20];
     int line;
 };
+
+
+struct Token createToken(enum TYPE type, const char *value) {
+    struct Token token;
+    token.type = type;
+    strcpy(token.value, value);
+    return token;
+}
+
+
+int main(){
+    char *input = "alo";
+
+    printf("%ld\n",input);
+    printf("%c\n",*input);
+    printf("%ld\n",input+1);
+    printf("%c\n",*(input+1));
+    printf("%ld\n",input+2);
+    printf("%c\n",*(input+2));
+
+}

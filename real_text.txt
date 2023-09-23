@@ -1,0 +1,10 @@
+type vetor = array [15] of integer;
+aluno = record
+
+
+nota1 : real;
+nota2 : real
+end;
+var A, B, C, D : integer;
+E : vetor;
+F : aluno;
