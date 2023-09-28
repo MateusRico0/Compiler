@@ -1,2 +1,4 @@
-3 + 
-42 * (17 -6)/ 5
+MSG = "digite as notas do aluno";
+-20sa
+# coments
+nota1 : real;
