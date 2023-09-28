@@ -1,4 +1,5 @@
 MSG = "digite as notas do aluno";
+# coments
 nota1 : real;
 nota2 : real
 end;

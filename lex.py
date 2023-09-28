@@ -11,35 +11,38 @@ def open_file_in_same_directory(file_name):
 
 
 token_patterns = [
-    (r'const', 'CONST'),
+    (r'\s', None),
+    (r'^#.*', None),
+    (r'==', 'EQUIVALENCE'),
+    (r'\bconst\b', 'CONST'),
     (r';', 'SEMICOLON'),
     (r'=', 'EQUAL'),
-    (r'type', 'TYPE'),
-    (r'integer', 'INTEGER'),
-    (r'real', 'REAL'),
-    (r'array', 'ARRAY'),
+    (r'\btype\b', 'TYPE'),
+    (r'\binteger\b', 'INTEGER'),
+    (r'\breal\b', 'REAL'),
+    (r'\barray\b', 'ARRAY'),
     (r'\[', 'LEFT_BRACKETS'),
     (r'\]', 'RIGHT_BRACKETS'),
-    (r'of', 'OF'),
-    (r'record', 'RECORD'),
+    (r'\bof\b', 'OF'),
+    (r'\brecord\b', 'RECORD'),
     (r':', 'COLON'),
-    (r'var', 'VAR'),
+    (r'\bvar\b', 'VAR'),
     (r',', 'COMMA'),
-    (r'function', 'FUNC'),
-    (r'procedure', 'PROCEDURE'),
+    (r'\bfunction\b', 'FUNC'),
+    (r'\bprocedure\b', 'PROCEDURE'),
     (r'\(', 'LEFT_PARENTHESIS'),
     (r'\)', 'RIGHT_PARENTHESIS'),
-    (r'begin', 'BEGIN'),
-    (r'end', 'END'),
+    (r'\bbegin\b', 'BEGIN'),
+    (r'\bend\b', 'END'),
     (r':=', 'ASSIGN'),
-    (r'while', 'WHILE'),
-    (r'do', 'DO'),
-    (r'if', 'IF'),
-    (r'then', 'THEN'),
-    (r'return', 'RETURN'),
-    (r'write', 'WRITE'),
-    (r'read', 'READ'),
-    (r'else', 'ELSE'),
+    (r'\bwhile\b', 'WHILE'),
+    (r'\bdo\b', 'DO'),
+    (r'\bif\b', 'IF'),
+    (r'\bthen\b', 'THEN'),
+    (r'\breturn\b', 'RETURN'),
+    (r'\bwrite\b', 'WRITE'),
+    (r'\bread\b', 'READ'),
+    (r'\belse\b', 'ELSE'),
     (r'>', 'GREATER'),
     (r'<', 'LESS'),
     (r'!', 'EXCLAMATION'),
@@ -50,10 +53,8 @@ token_patterns = [
     (r'\.', 'DOT'),
     (r'(\d+\.\d*|\.\d+|\d+)', 'NUMBER'), 
     (r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', 'IDENTIFIER'),
-    (r'\s', None),
-    (r'"[^"]*"', 'STRING')
+    (r'"[^"]*"', 'STRING'),
 ]
-
 
 def tokezizer(file):
     tokens = []
@@ -63,25 +64,33 @@ def tokezizer(file):
             line_number += 1
         for pattern, token_type in token_patterns:
             match = re.match(pattern, file)
+            print('match',match)
+            print('PATTERN',pattern)
+            print('TOKEN',token_type)
             if match:
+                print("1\n")
                 value = match.group(0)
                 if token_type:
-                    print('t',token_type)
-                    if token_type == 'STRING':
-                        print('values',value)
-                        tokens.append((token_type, value[1:-1], line_number))
-                    else:
-                        tokens.append((token_type, value, line_number))
+                    tokens.append((token_type, value, line_number))
+                    print('vall: ', value)
                 file = file[len(value):]
                 break
+        else:
+            raise ValueError(f"Erro: Token {file[0]} não identificado na linha {line_number}")
+                
     return tokens
 
 
 if __name__ == '__main__':
     file = open_file_in_same_directory("real_text.txt")
-    tokens = tokezizer(file)
-    all_tokens = []
-    for token_type, value, line_number in tokens:
-        token_string = f'Type: {token_type}, Value: {value}, Line: {line_number}'
-        all_tokens.append(token_string)
-        print(token_string)
+    try:
+        tokens = tokezizer(file)
+        all_tokens = []
+        for token_type, value, line_number in tokens:
+            token_string = f'Type: {token_type}, Value: {value}, Line: {line_number}'
+            all_tokens.append(token_string)
+            print(token_string)
+    except ValueError as e:
+        print(e)
+        
+    
