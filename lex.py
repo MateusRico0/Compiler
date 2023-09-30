@@ -82,7 +82,7 @@ def tokezizer(file):
 
 
 if __name__ == '__main__':
-    file = open_file_in_same_directory("real_text.txt")
+    file = open_file_in_same_directory("test.txt")
     try:
         tokens = tokezizer(file)
         all_tokens = []
