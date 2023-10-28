@@ -2,23 +2,6 @@ import re
 import os
 
 
-def open_file_in_same_directory(file_name):
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(script_dir, file_name)
-    with open(file_path, 'r') as file:
-        content = file.read()
-    return content
-
-
-def save_file_in_same_directory(tokens):
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(script_dir, 'output.txt')
-    f = open(file_path, 'w')
-    for token in tokens:
-        f.write(token)
-    f.close()
-
-
 token_patterns = [
     (r'\s', None),
     (r'^#.*', None),
@@ -66,7 +49,42 @@ token_patterns = [
 ]
 
 
-def tokezizer(file):
+FIRST_PROGRAMA = ['CONST', 'TYPE', 'VAR', 'FUNC', 'PROCEDURE', 'BEGIN', 'COLON', None]
+FIRST_DECLARACOES = ['CONST', 'TYPE', 'VAR', 'FUNC', 'PROCEDURE', None]
+FIRST_DEF_CONST = ['CONST', None]
+FIRST_LIST_CONST = ['IDENTIFIER', None]
+FIRST_CONSTANTE = ['IDENTIFIER']
+FIRST_CONST_VALOR = ['STRING', 'IDENTIFIER', 'NUMBER']
+FIRST_DEF_TIPOS = ['TYPE', None]
+FIRST_LIST_TIPOS = ['IDENTIFIER', None]
+FIRST_TIPO = ['IDENTIFIER']
+FIRST_TIPO_DADO = ['INTEGER', 'REAL', 'ARRAY', 'RECORD']
+FIRST_CAMPOS = ['IDENTIFIER']
+FIRST_LISTA_CAMPOS = ['SEMICOLON', None]
+FIRST_DEF_VAR = ['VAR', None]
+FIRST_LIST_VAR = ['IDENTIFIER', None]
+FIRST_VARIAVEL = ['IDENTIFIER']
+FIRST_LISTA_ID = ['COMMA', None]
+FIRST_DEF_ROT = ['FUNC', 'PROCEDURE', None]
+FIRST_NOME_ROTINA = ['FUNC', 'PROCEDURE']
+FIRST_PARAM_ROT = ['LEFT_PARENTHESIS', None]
+FIRST_BLOCO = ['BEGIN', 'COLON']
+FIRST_LISTA_COM = ['IDENTIFIER', 'WHILE', 'IF', 'RETURN', 'WRITE', 'READ', None]
+FIRST_COMANDO = ['IDENTIFIER', 'WHILE', 'IF', 'RETURN', 'WRITE', 'READ']
+FIRST_ELSE = ['ELSE', None]
+FIRST_LISTA_PARAM = ['IDENTIFIER', 'NUMBER']
+FIRST_EXP_LOGICA = ['IDENTIFIER', 'NUMBER']
+FIRST_OP_LOGICO = ['GREATER', 'LESS', 'EQUAL', 'EXCLAMATION']
+FIRST_EXP_MAT = ['IDENTIFIER', 'NUMBER']
+FIRST_OP_MAT = ['PLUS', 'MINUS', 'MUL', 'DIV']
+FIRST_PARAMETRO = ['IDENTIFIER', 'NUMBER']
+FIRST_NOME = ['DOT', 'LEFT_BRACKETS', 'LEFT_PARENTHESIS', None]
+FIRST_ID = ['IDENTIFIER']
+FIRST_NUMERO = ['NUMBER']
+
+
+#======================================================================================================================#
+def tokenizer(file):
     tokens = []
     line_number = 1
     while file:
@@ -74,33 +92,81 @@ def tokezizer(file):
             line_number += 1
         for pattern, token_type in token_patterns:
             match = re.match(pattern, file)
-            # print('match',match)
-            # print('PATTERN',pattern)
-            # print('TOKEN',token_type)
             if match:
-                # print("1\n")
                 value = match.group(0)
                 if token_type:
                     tokens.append((token_type, value, line_number))
-                    # print('vall: ', value)
                 file = file[len(value):]
                 break
         else:
             raise ValueError(f"Erro: Token {file[0]} não identificado na linha {line_number}")
-
     return tokens
 
 
-if __name__ == '__main__':
-    file = open_file_in_same_directory("real_text.txt")
+def open_file_in_same_directory(file_name):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(script_dir, file_name)
+    with open(file_path, 'r') as file:
+        content = file.read()
+    return content
+
+
+def lexical_analyzer(file_name):
+    file = open_file_in_same_directory(file_name)
     try:
-        tokens = tokezizer(file)
-        all_tokens = []
-        for token_type, value, line_number in tokens:
-            token_string = f'Value: {value}, Type: {token_type}, Line: {line_number}\n'
-            all_tokens.append(token_string)
-            # print(token_string)
-        save_file_in_same_directory(all_tokens)
+        tokens = tokenizer(file)
+        return tokens
     except ValueError as e:
         print(e)
 
+
+#======================================================================================================================#
+class Node:
+    def __init__(self, value):
+        self.value = value
+        self.children = []
+
+
+def regra_DECLARACOES(tokens):
+    no = Node("DECLARACOES")
+    if tokens[0][0] in FIRST_DEF_CONST:
+        no.children.append(regra_DEF_CONST(tokens))
+    if tokens[0][0] in FIRST_DEF_TIPOS:
+        no.children.append(regra_DEF_TIPOS(tokens))
+    if tokens[0][0] in FIRST_DEF_VAR:
+        no.children.append(regra_DEF_VAR(tokens))
+    if tokens[0][0] in FIRST_DEF_ROT:
+        no.children.append(regra_DEF_ROT(tokens))
+    return no
+
+
+def regra_PROGRAMA(tokens):
+    no = Node("PROGRAMA")
+    if tokens[0][0] in FIRST_DECLARACOES:
+        no.children.append(regra_DECLARACOES(tokens))
+    if tokens[0][0] in FIRST_BLOCO:
+        no.children.append(regra_BLOCO(tokens))
+    return no
+
+
+def create_syntactic_tree(tokens):
+    if tokens[0][0] in FIRST_PROGRAMA:
+        tree = regra_PROGRAMA(tokens)
+        return tree
+    else:
+        raise ValueError(f"Erro: Token {tokens[0][1]} inesperado na linha {tokens[0][2]}")
+
+
+def syntactic_analyzer(tokens):
+    try:
+        tree = create_syntactic_tree(tokens)
+        return tree
+    except ValueError as e:
+        print(e)
+
+
+
+#======================================================================================================================#
+if __name__ == '__main__':
+    lexical_output = lexical_analyzer("input.txt")
+    syntactic_output = syntactic_analyzer(lexical_output)
