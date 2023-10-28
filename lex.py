@@ -1,7 +1,6 @@
 import re
 import os
 
-
 token_patterns = [
     (r'\s', None),
     (r'^#.*', None),
@@ -48,7 +47,6 @@ token_patterns = [
     (r'"[^"]*"', 'STRING'),
 ]
 
-
 FIRST_PROGRAMA = ['CONST', 'TYPE', 'VAR', 'FUNC', 'PROCEDURE', 'BEGIN', 'COLON', None]
 FIRST_DECLARACOES = ['CONST', 'TYPE', 'VAR', 'FUNC', 'PROCEDURE', None]
 FIRST_DEF_CONST = ['CONST', None]
@@ -83,7 +81,7 @@ FIRST_ID = ['IDENTIFIER']
 FIRST_NUMERO = ['NUMBER']
 
 
-#======================================================================================================================#
+# ======================================================================================================================#
 def tokenizer(file):
     tokens = []
     line_number = 1
@@ -120,32 +118,174 @@ def lexical_analyzer(file_name):
         print(e)
 
 
-#======================================================================================================================#
+# ======================================================================================================================#
 class Node:
     def __init__(self, value):
         self.value = value
         self.children = []
 
 
+def regra_NUMERO(tokens):
+    no = Node("NUMERO")
+    return no
+
+
+def regra_ID(tokens):
+    no = Node("ID")
+    return no
+
+
+def regra_NOME(tokens):
+    no = Node("NOME")
+    return no
+
+
+def regra_PARAMETRO(tokens):
+    no = Node("PARAMETRO")
+    return no
+
+
+def regra_OP_MAT(tokens):
+    no = Node("OP_MAT")
+    return no
+
+
+def regra_EXP_MAT(tokens):
+    no = Node("EXP_MAT")
+    return no
+
+
+def regra_OP_LOGICO(tokens):
+    no = Node("OP_LOGICO")
+    return no
+
+
+def regra_EXP_LOGICA(tokens):
+    no = Node("EXP_LOGICA")
+    return no
+
+
+def regra_LISTA_PARAM(tokens):
+    no = Node("LISTA_PARAM")
+    return no
+
+
+def regra_ELSE(tokens):
+    no = Node("ELSE")
+    return no
+
+
+def regra_COMANDO(tokens):
+    no = Node("COMANDO")
+    return no
+
+
+def regra_LISTA_COM(tokens):
+    no = Node("LISTA_COM")
+    return no
+
+
+def regra_BLOCO(tokens):
+    no = Node("BLOCO")
+    return no
+
+
+def regra_PARAM_ROTINA(tokens):
+    no = Node("PARAM_ROTINA")
+    return no
+
+
+def regra_NOME_ROTINA(tokens):
+    no = Node("NOME_ROTINA")
+    return no
+
+
+def regra_DEF_ROT(tokens):
+    no = Node("DEF_ROT")
+    return no
+
+
+def regra_LISTA_ID(tokens):
+    no = Node("LISTA_ID")
+    return no
+
+
+def regra_VARIAVEL(tokens):
+    no = Node("VARIAVEL")
+    return no
+
+
+def regra_LIST_VAR(tokens):
+    no = Node("LIST_VAR")
+    return no
+
+
+def regra_DEF_VAR(tokens):
+    no = Node("DEF_VAR")
+    return no
+
+
+def regra_LISTA_CAMPOS(tokens):
+    no = Node("LISTA_CAMPOS")
+    return no
+
+
+def regra_CAMPOS(tokens):
+    no = Node("CAMPOS")
+    return no
+
+
+def regra_TIPO_DADO(tokens):
+    no = Node("TIPO_DADO")
+    return no
+
+
+def regra_TIPO(tokens):
+    no = Node("TIPO")
+    return no
+
+
+def regra_LIST_TIPOS(tokens):
+    no = Node("LIST_TIPOS")
+    return no
+
+
+def regra_DEF_TIPOS(tokens):
+    no = Node("DEF_TIPOS")
+    return no
+
+
+def regra_CONST_VALOR(tokens):
+    no = Node("CONST_VALOR")
+    return no
+
+
+def regra_CONSTANTE(tokens):
+    no = Node("CONSTANTE")
+    return no
+
+
+def regra_LIST_CONST(tokens):
+    no = Node("LIST_CONST")
+    return no
+
+
+def regra_DEF_CONST(tokens):
+    no = Node("CONST")
+    return no
+
+
 def regra_DECLARACOES(tokens):
     no = Node("DECLARACOES")
-    if tokens[0][0] in FIRST_DEF_CONST:
-        no.children.append(regra_DEF_CONST(tokens))
-    if tokens[0][0] in FIRST_DEF_TIPOS:
-        no.children.append(regra_DEF_TIPOS(tokens))
-    if tokens[0][0] in FIRST_DEF_VAR:
-        no.children.append(regra_DEF_VAR(tokens))
-    if tokens[0][0] in FIRST_DEF_ROT:
-        no.children.append(regra_DEF_ROT(tokens))
     return no
 
 
 def regra_PROGRAMA(tokens):
     no = Node("PROGRAMA")
     if tokens[0][0] in FIRST_DECLARACOES:
-        no.children.append(regra_DECLARACOES(tokens))
+        no.children.append( regra_DECLARACOES(tokens) )
     if tokens[0][0] in FIRST_BLOCO:
-        no.children.append(regra_BLOCO(tokens))
+        no.children.append( regra_BLOCO(tokens) )
     return no
 
 
@@ -153,8 +293,6 @@ def create_syntactic_tree(tokens):
     if tokens[0][0] in FIRST_PROGRAMA:
         tree = regra_PROGRAMA(tokens)
         return tree
-    else:
-        raise ValueError(f"Erro: Token {tokens[0][1]} inesperado na linha {tokens[0][2]}")
 
 
 def syntactic_analyzer(tokens):
@@ -165,8 +303,7 @@ def syntactic_analyzer(tokens):
         print(e)
 
 
-
-#======================================================================================================================#
+# ======================================================================================================================#
 if __name__ == '__main__':
     lexical_output = lexical_analyzer("input.txt")
     syntactic_output = syntactic_analyzer(lexical_output)
