@@ -1,4 +1,11 @@
-MSG = "digite as notas do aluno";
--20sa
-# coments
-nota1 : real;
+const     TAM == 10;
+    MSG == "digite as notas do aluno";
+
+
+begin
+    A :=TAM + 20;
+    B := fatorial(A);
+    C := exp(A,B);
+    D := media(E);
+    lerDados();
+end
