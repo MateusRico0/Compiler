@@ -5,6 +5,7 @@ token_patterns = [
     (r'\s', None),
     (r'^#.*', None),
     (r'==', 'EQUIVALENCE'),
+    (r':=', 'ASSIGN'),
     (r'\bconst\b', 'CONST'),
     (r';', 'SEMICOLON'),
     (r'=', 'EQUAL'),
@@ -25,7 +26,6 @@ token_patterns = [
     (r'\)', 'RIGHT_PARENTHESIS'),
     (r'\bbegin\b', 'BEGIN'),
     (r'\bend\b', 'END'),
-    (r':=', 'ASSIGN'),
     (r'\bwhile\b', 'WHILE'),
     (r'\bdo\b', 'DO'),
     (r'\bif\b', 'IF'),
@@ -70,7 +70,7 @@ FIRST_BLOCO = ['BEGIN', 'COLON']
 FIRST_LISTA_COM = ['IDENTIFIER', 'WHILE', 'IF', 'RETURN', 'WRITE', 'READ', None]
 FIRST_COMANDO = ['IDENTIFIER', 'WHILE', 'IF', 'RETURN', 'WRITE', 'READ']
 FIRST_ELSE = ['ELSE', None]
-FIRST_LISTA_PARAM = ['IDENTIFIER', 'NUMBER']
+FIRST_LISTA_PARAM = ['IDENTIFIER', 'NUMBER', None]
 FIRST_EXP_LOGICA = ['IDENTIFIER', 'NUMBER']
 FIRST_OP_LOGICO = ['GREATER', 'LESS', 'EQUAL', 'EXCLAMATION']
 FIRST_EXP_MAT = ['IDENTIFIER', 'NUMBER']
@@ -124,168 +124,351 @@ class Node:
         self.value = value
         self.children = []
 
+    def __str__(self, level=0):
+        result = "  " * level + repr(self.value) + "\n"
+        for child in self.children:
+            result += child.__str__(level + 1)
+        return result
+
+
+def erro(tokens):
+    raise ValueError(f"Erro: Token {tokens[0][1]}, do tipo {tokens[0][0]} inesperado na linha {tokens[0][2]}")
+
+
+def check_non_terminal(no, tokens, first_list, filho, ignoravel=0):
+    if tokens[0][0] in first_list:
+        no.children.append(filho(tokens))
+        return True
+    elif None not in first_list and ignoravel == 0:
+        erro(tokens)
+    return False
+
+
+def check_terminal(no, tokens, value, ignoravel=0):
+    if tokens[0][0] == value:
+        no.children.append(Node(tokens.pop(0)[1]))
+        return True
+    elif ignoravel == 0:
+        erro(tokens)
+    return False
+
 
 def regra_NUMERO(tokens):
-    no = Node("NUMERO")
+    no = Node('NUMERO')
+    check_terminal(no, tokens, 'NUMBER')
     return no
 
 
 def regra_ID(tokens):
-    no = Node("ID")
+    no = Node('ID')
+    check_terminal(no, tokens, 'IDENTIFIER')
     return no
 
 
 def regra_NOME(tokens):
-    no = Node("NOME")
-    return no
+    no = Node('NOME')
+    if check_terminal(no, tokens, 'DOT', 1):
+        check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+        check_non_terminal(no, tokens, FIRST_NOME, regra_NOME)
+        return no
+    elif check_terminal(no, tokens, 'LEFT_BRACKETS', 1):
+        check_non_terminal(no, tokens, FIRST_PARAMETRO, regra_PARAMETRO)
+        check_terminal(no, tokens, 'RIGHT_BRACKETS')
+        return no
+    elif check_terminal(no, tokens, 'LEFT_PARENTHESIS'):
+        check_non_terminal(no, tokens, FIRST_LISTA_PARAM, regra_LISTA_PARAM)
+        check_terminal(no, tokens, 'RIGHT_PARENTHESIS')
+        return no
 
 
 def regra_PARAMETRO(tokens):
-    no = Node("PARAMETRO")
-    return no
+    no = Node('PARAMETRO')
+    if check_non_terminal(no, tokens, FIRST_ID, regra_ID, 1):
+        check_non_terminal(no, tokens, FIRST_NOME, regra_NOME)
+        return no
+    elif check_non_terminal(no, tokens, FIRST_NUMERO, regra_NUMERO):
+        return no
 
 
 def regra_OP_MAT(tokens):
-    no = Node("OP_MAT")
-    return no
+    no = Node('OP_MAT')
+    if check_terminal(no, tokens, 'PLUS', 1):
+        return no
+    elif check_terminal(no, tokens, 'MINUS', 1):
+        return no
+    elif check_terminal(no, tokens, 'MUL', 1):
+        return no
+    elif check_terminal(no, tokens, 'DIV'):
+        return no
 
 
 def regra_EXP_MAT(tokens):
-    no = Node("EXP_MAT")
+    no = Node('EXP_MAT')
+    check_non_terminal(no, tokens, FIRST_PARAMETRO, regra_PARAMETRO)
+    if check_non_terminal(no, tokens, FIRST_OP_MAT, regra_OP_MAT, 1):
+        check_non_terminal(no, tokens, FIRST_EXP_MAT, regra_EXP_MAT)
     return no
 
 
 def regra_OP_LOGICO(tokens):
-    no = Node("OP_LOGICO")
-    return no
+    no = Node('OP_LOGICO')
+    if check_terminal(no, tokens, 'GREATER', 1):
+        return no
+    elif check_terminal(no, tokens, 'LESS', 1):
+        return no
+    elif check_terminal(no, tokens, 'EQUAL', 1):
+        return no
+    elif check_terminal(no, tokens, 'EXCLAMATION'):
+        return no
 
 
 def regra_EXP_LOGICA(tokens):
-    no = Node("EXP_LOGICA")
+    no = Node('EXP_LOGICA')
+    check_non_terminal(no, tokens, FIRST_EXP_MAT, regra_EXP_MAT)
+    if check_non_terminal(no, tokens, FIRST_OP_LOGICO, regra_OP_LOGICO, 1):
+        check_non_terminal(no, tokens, FIRST_EXP_LOGICA, regra_EXP_LOGICA)
     return no
 
 
 def regra_LISTA_PARAM(tokens):
-    no = Node("LISTA_PARAM")
+    no = Node('LISTA_PARAM')
+    check_non_terminal(no, tokens, FIRST_PARAMETRO, regra_PARAMETRO)
+    if check_terminal(no, tokens, 'COMMA', 1):
+        check_non_terminal(no, tokens, FIRST_LISTA_PARAM, regra_LISTA_PARAM)
     return no
 
 
 def regra_ELSE(tokens):
-    no = Node("ELSE")
+    no = Node('ELSE')
+    check_terminal(no, tokens, 'ELSE')
+    check_non_terminal(no, tokens, FIRST_BLOCO, regra_BLOCO)
     return no
 
 
 def regra_COMANDO(tokens):
-    no = Node("COMANDO")
-    return no
+    no = Node('COMANDO')
+    if check_non_terminal(no, tokens, FIRST_ID, regra_ID, 1):
+        check_non_terminal(no, tokens, FIRST_NOME, regra_NOME)
+        check_terminal(no, tokens, 'ASSIGN')
+        check_non_terminal(no, tokens, FIRST_EXP_MAT, regra_EXP_MAT)
+        return no
+    elif check_terminal(no, tokens, 'WHILE', 1):
+        check_non_terminal(no, tokens, FIRST_EXP_LOGICA, regra_EXP_LOGICA)
+        check_terminal(no, tokens, 'DO')
+        check_non_terminal(no, tokens, FIRST_BLOCO, regra_BLOCO)
+        return no
+    elif check_terminal(no, tokens, 'IF', 1):
+        check_non_terminal(no, tokens, FIRST_EXP_LOGICA, regra_EXP_LOGICA)
+        check_terminal(no, tokens, 'THEN')
+        check_non_terminal(no, tokens, FIRST_BLOCO, regra_BLOCO)
+        check_non_terminal(no, tokens, FIRST_ELSE, regra_ELSE)
+        return no
+    elif check_terminal(no, tokens, 'RETURN', 1):
+        check_non_terminal(no, tokens, FIRST_EXP_LOGICA, regra_EXP_LOGICA)
+        return no
+    elif check_terminal(no, tokens, 'WRITE', 1):
+        check_non_terminal(no, tokens, FIRST_EXP_MAT, regra_EXP_MAT)
+        return no
+    elif check_terminal(no, tokens, 'READ'):
+        check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+        check_non_terminal(no, tokens, FIRST_NOME, regra_NOME)
+        return no
 
 
 def regra_LISTA_COM(tokens):
-    no = Node("LISTA_COM")
+    no = Node('LISTA_COM')
+    check_non_terminal(no, tokens, FIRST_COMANDO, regra_COMANDO)
+    check_terminal(no, tokens, 'SEMICOLON')
+    check_non_terminal(no, tokens, FIRST_LISTA_COM, regra_LISTA_COM)
     return no
 
 
 def regra_BLOCO(tokens):
-    no = Node("BLOCO")
-    return no
+    no = Node('BLOCO')
+    if check_terminal(no, tokens, 'BEGIN', 1):
+        check_non_terminal(no, tokens, FIRST_COMANDO, regra_COMANDO)
+        check_terminal(no, tokens, 'SEMICOLON')
+        check_non_terminal(no, tokens, FIRST_LISTA_COM, regra_LISTA_COM)
+        check_terminal(no, tokens, 'END')
+        return no
+    elif check_terminal(no, tokens, 'COLON'):
+        check_non_terminal(no, tokens, FIRST_COMANDO, regra_COMANDO)
+        return no
 
-
-def regra_PARAM_ROTINA(tokens):
-    no = Node("PARAM_ROTINA")
+def regra_PARAM_ROT(tokens):
+    no = Node('PARAM_ROT')
+    check_terminal(no, tokens, 'LEFT_PARENTHESIS')
+    check_non_terminal(no, tokens, FIRST_CAMPOS, regra_CAMPOS)
+    check_terminal(no, tokens, 'RIGHT_PARENTHESIS')
     return no
 
 
 def regra_NOME_ROTINA(tokens):
-    no = Node("NOME_ROTINA")
-    return no
+    no = Node('NOME_ROTINA')
+    if check_terminal(no, tokens, 'FUNC', 1):
+        check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+        check_non_terminal(no, tokens, FIRST_PARAM_ROT, regra_PARAM_ROT)
+        check_terminal(no, tokens, 'COLON')
+        check_non_terminal(no, tokens, FIRST_TIPO_DADO, regra_TIPO_DADO)
+        return no
+    elif check_terminal(no, tokens, 'PROCEDURE'):
+        check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+        check_non_terminal(no, tokens, FIRST_PARAM_ROT, regra_PARAM_ROT)
+        return no
 
 
 def regra_DEF_ROT(tokens):
-    no = Node("DEF_ROT")
+    no = Node('DEF_ROT')
+    check_non_terminal(no, tokens, FIRST_NOME_ROTINA, regra_NOME_ROTINA)
+    check_non_terminal(no, tokens, FIRST_DEF_VAR, regra_DEF_VAR)
+    check_non_terminal(no, tokens, FIRST_BLOCO, regra_BLOCO)
+    check_non_terminal(no, tokens, FIRST_DEF_ROT, regra_DEF_ROT)
     return no
 
 
 def regra_LISTA_ID(tokens):
-    no = Node("LISTA_ID")
+    no = Node('LISTA_ID')
+    check_terminal(no, tokens, 'COMMA')
+    check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+    check_non_terminal(no, tokens, FIRST_LISTA_ID, regra_LISTA_ID)
     return no
 
 
 def regra_VARIAVEL(tokens):
-    no = Node("VARIAVEL")
+    no = Node('VARIAVEL')
+    check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+    check_non_terminal(no, tokens, FIRST_LISTA_ID, regra_LISTA_ID)
+    check_terminal(no, tokens, 'COLON')
+    check_non_terminal(no, tokens, FIRST_TIPO_DADO, regra_TIPO_DADO)
     return no
 
 
 def regra_LIST_VAR(tokens):
-    no = Node("LIST_VAR")
+    no = Node('LIST_VAR')
+    check_non_terminal(no, tokens, FIRST_VARIAVEL, regra_VARIAVEL)
+    check_terminal(no, tokens, 'SEMICOLON')
+    check_non_terminal(no, tokens, FIRST_LIST_VAR, regra_LIST_VAR)
     return no
 
 
 def regra_DEF_VAR(tokens):
-    no = Node("DEF_VAR")
+    no = Node('DEF_VAR')
+    check_terminal(no, tokens, 'VAR')
+    check_non_terminal(no, tokens, FIRST_VARIAVEL, regra_VARIAVEL)
+    check_terminal(no, tokens, 'SEMICOLON')
+    check_non_terminal(no, tokens, FIRST_LIST_VAR, regra_LIST_VAR)
     return no
 
 
 def regra_LISTA_CAMPOS(tokens):
-    no = Node("LISTA_CAMPOS")
+    no = Node('LISTA_CAMPOS')
+    check_terminal(no, tokens, 'SEMICOLON')
+    check_non_terminal(no, tokens, FIRST_CAMPOS, regra_CAMPOS)
+    check_non_terminal(no, tokens, FIRST_LISTA_CAMPOS, regra_LISTA_CAMPOS)
     return no
 
 
 def regra_CAMPOS(tokens):
-    no = Node("CAMPOS")
+    no = Node('CAMPOS')
+    check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+    check_terminal(no, tokens, 'COLON')
+    check_non_terminal(no, tokens, FIRST_TIPO_DADO, regra_TIPO_DADO)
+    check_non_terminal(no, tokens, FIRST_LISTA_CAMPOS, regra_LISTA_CAMPOS)
     return no
 
 
 def regra_TIPO_DADO(tokens):
-    no = Node("TIPO_DADO")
-    return no
+    no = Node('TIPO_DADO')
+    if check_terminal(no, tokens, 'INTEGER', 1):
+        return no
+    elif check_terminal(no, tokens, 'REAL', 1):
+        return no
+    elif check_terminal(no, tokens, 'ARRAY', 1):
+        check_terminal(no, tokens, 'LEFT_BRACKETS')
+        check_non_terminal(no, tokens, FIRST_NUMERO, regra_NUMERO)
+        check_terminal(no, tokens, 'RIGHT_BRACKETS')
+        check_terminal(no, tokens, 'OF')
+        check_non_terminal(no, tokens, FIRST_TIPO_DADO, regra_TIPO_DADO)
+        return no
+    elif check_terminal(no, tokens, 'RECORD', 1):
+        check_non_terminal(no, tokens, FIRST_CAMPOS, regra_CAMPOS)
+        check_terminal(no, tokens, 'END')
+        return no
+    elif check_non_terminal(no, tokens, FIRST_ID, regra_ID):
+        return no
 
 
 def regra_TIPO(tokens):
-    no = Node("TIPO")
+    no = Node('TIPO')
+    check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+    check_terminal(no, tokens, 'EQUIVALENCE')
+    check_non_terminal(no, tokens, FIRST_TIPO_DADO, regra_TIPO_DADO)
     return no
 
 
 def regra_LIST_TIPOS(tokens):
-    no = Node("LIST_TIPOS")
+    no = Node('LIST_TIPOS')
+    check_non_terminal(no, tokens, FIRST_TIPO, regra_TIPO)
+    check_terminal(no, tokens, 'SEMICOLON')
+    check_non_terminal(no, tokens, FIRST_LIST_TIPOS, regra_LIST_TIPOS)
     return no
 
 
 def regra_DEF_TIPOS(tokens):
-    no = Node("DEF_TIPOS")
+    no = Node('DEF_TIPOS')
+    check_terminal(no, tokens, 'TYPE')
+    check_non_terminal(no, tokens, FIRST_TIPO, regra_TIPO)
+    check_terminal(no, tokens, 'SEMICOLON')
+    check_non_terminal(no, tokens, FIRST_LIST_TIPOS, regra_LIST_TIPOS)
     return no
 
 
 def regra_CONST_VALOR(tokens):
-    no = Node("CONST_VALOR")
-    return no
+    no = Node('CONST_VALOR')
+    if check_terminal(no, tokens, 'STRING', 1):
+        return no
+    elif check_non_terminal(no, tokens, FIRST_EXP_MAT, regra_EXP_MAT):
+        return no
 
 
 def regra_CONSTANTE(tokens):
-    no = Node("CONSTANTE")
+    no = Node('CONSTANTE')
+    check_non_terminal(no, tokens, FIRST_ID, regra_ID)
+    check_terminal(no, tokens, 'EQUIVALENCE')
+    check_non_terminal(no, tokens, FIRST_CONST_VALOR, regra_CONST_VALOR)
     return no
 
 
 def regra_LIST_CONST(tokens):
-    no = Node("LIST_CONST")
+    no = Node('LIST_CONST')
+    check_non_terminal(no, tokens, FIRST_CONSTANTE, regra_CONSTANTE)
+    check_terminal(no, tokens, 'SEMICOLON')
+    check_non_terminal(no, tokens, FIRST_LIST_CONST, regra_LIST_CONST)
     return no
 
 
 def regra_DEF_CONST(tokens):
-    no = Node("CONST")
+    no = Node('CONST')
+    check_terminal(no, tokens, 'CONST')
+    check_non_terminal(no, tokens, FIRST_CONSTANTE, regra_CONSTANTE)
+    check_terminal(no, tokens, 'SEMICOLON')
+    check_non_terminal(no, tokens, FIRST_LIST_CONST, regra_LIST_CONST)
     return no
 
 
 def regra_DECLARACOES(tokens):
-    no = Node("DECLARACOES")
+    no = Node('DECLARACOES')
+    check_non_terminal(no, tokens, FIRST_DEF_CONST, regra_DEF_CONST)
+    check_non_terminal(no, tokens, FIRST_DEF_TIPOS, regra_DEF_TIPOS)
+    check_non_terminal(no, tokens, FIRST_DEF_VAR, regra_DEF_VAR)
+    check_non_terminal(no, tokens, FIRST_DEF_ROT, regra_DEF_ROT)
     return no
 
 
 def regra_PROGRAMA(tokens):
-    no = Node("PROGRAMA")
-    if tokens[0][0] in FIRST_DECLARACOES:
-        no.children.append( regra_DECLARACOES(tokens) )
-    if tokens[0][0] in FIRST_BLOCO:
-        no.children.append( regra_BLOCO(tokens) )
+    no = Node('PROGRAMA')
+    check_non_terminal(no, tokens, FIRST_DECLARACOES, regra_DECLARACOES)
+    check_non_terminal(no, tokens, FIRST_BLOCO, regra_BLOCO)
     return no
 
 
@@ -293,6 +476,8 @@ def create_syntactic_tree(tokens):
     if tokens[0][0] in FIRST_PROGRAMA:
         tree = regra_PROGRAMA(tokens)
         return tree
+    else:
+        erro(tokens)
 
 
 def syntactic_analyzer(tokens):
@@ -307,3 +492,23 @@ def syntactic_analyzer(tokens):
 if __name__ == '__main__':
     lexical_output = lexical_analyzer("input.txt")
     syntactic_output = syntactic_analyzer(lexical_output)
+    print(syntactic_output)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
