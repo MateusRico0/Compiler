@@ -56,7 +56,7 @@ FIRST_CONST_VALOR = ['STRING', 'IDENTIFIER', 'NUMBER']
 FIRST_DEF_TIPOS = ['TYPE', None]
 FIRST_LIST_TIPOS = ['IDENTIFIER', None]
 FIRST_TIPO = ['IDENTIFIER']
-FIRST_TIPO_DADO = ['INTEGER', 'REAL', 'ARRAY', 'RECORD']
+FIRST_TIPO_DADO = ['INTEGER', 'REAL', 'ARRAY', 'RECORD', 'IDENTIFIER']
 FIRST_CAMPOS = ['IDENTIFIER']
 FIRST_LISTA_CAMPOS = ['SEMICOLON', None]
 FIRST_DEF_VAR = ['VAR', None]
@@ -132,23 +132,32 @@ class Node:
 
 
 def erro(tokens):
-    raise ValueError(f"Erro: Token {tokens[0][1]}, do tipo {tokens[0][0]} inesperado na linha {tokens[0][2]}")
+    if tokens:
+        raise ValueError(f"Erro: Token {tokens[0][1]}, do tipo {tokens[0][0]} inesperado na linha {tokens[0][2]}")
+    else:
+        raise ValueError(f"Erro: Lista de Tokens vazia")
 
 
 def check_non_terminal(no, tokens, first_list, filho, ignoravel=0):
-    if tokens[0][0] in first_list:
-        no.children.append(filho(tokens))
-        return True
-    elif None not in first_list and ignoravel == 0:
+    if tokens:
+        if tokens[0][0] in first_list:
+            no.children.append(filho(tokens))
+            return True
+        elif None not in first_list and ignoravel == 0:
+            erro(tokens)
+    else:
         erro(tokens)
     return False
 
 
 def check_terminal(no, tokens, value, ignoravel=0):
-    if tokens[0][0] == value:
-        no.children.append(Node(tokens.pop(0)[1]))
-        return True
-    elif ignoravel == 0:
+    if tokens:
+        if tokens[0][0] == value:
+            no.children.append(Node(tokens.pop(0)[1]))
+            return True
+        elif ignoravel == 0:
+            erro(tokens)
+    else:
         erro(tokens)
     return False
 
@@ -249,8 +258,8 @@ def regra_COMANDO(tokens):
     no = Node('COMANDO')
     if check_non_terminal(no, tokens, FIRST_ID, regra_ID, 1):
         check_non_terminal(no, tokens, FIRST_NOME, regra_NOME)
-        check_terminal(no, tokens, 'ASSIGN')
-        check_non_terminal(no, tokens, FIRST_EXP_MAT, regra_EXP_MAT)
+        if check_terminal(no, tokens, 'ASSIGN', 1):
+            check_non_terminal(no, tokens, FIRST_EXP_MAT, regra_EXP_MAT)
         return no
     elif check_terminal(no, tokens, 'WHILE', 1):
         check_non_terminal(no, tokens, FIRST_EXP_LOGICA, regra_EXP_LOGICA)
@@ -482,7 +491,7 @@ def create_syntactic_tree(tokens):
 
 def syntactic_analyzer(tokens):
     try:
-        tree = create_syntactic_tree(tokens)
+        tree = regra_PROGRAMA(tokens) #create_syntactic_tree(tokens)
         return tree
     except ValueError as e:
         print(e)
