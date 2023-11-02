@@ -51,12 +51,14 @@ def erro(tokens):
     if tokens:
         raise ValueError(f"Erro: Token {tokens[0][1]}, do tipo {tokens[0][0]} inesperado na linha {tokens[0][2]}")
     else:
-        raise ValueError(f"Erro: Lista de Tokens vazia")
+        raise ValueError(f"Erro: token necessário não encontrado na linha {linha}")
 
 
 def check_non_terminal(no, tokens, first_list, filho, ignoravel=0):
+    global linha
     if tokens:
         if tokens[0][0] in first_list:
+            linha = tokens[0][2]
             no.children.append(filho(tokens))
             return True
         elif None not in first_list and ignoravel == 0:
