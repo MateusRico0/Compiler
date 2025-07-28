@@ -1,20 +1,18 @@
 # Compiler
 basic-compiler-for-Pyscal
 
-## Lexical Analysis (tokenizer)
+A basic compiler implementation for the PyScal language.
 
-It reads the whole file and transforms it in a array of tokens.
+## Compiler Phases
 
-Tokens are also known as the "Terminal symbols" in a grammar, they are what constitutes the language itself (if,else,for,while,{,},[,],=, so on)
+### 1. Lexical Analysis (Tokenizer)
 
-## Syntax Analysis
+- Reads the entire source file and transforms it into an array of tokens
+- Tokens (also called "terminal symbols") form the basic building blocks of the language
+- Examples include: keywords (`if`, `else`, `for`, `while`), operators (`=`, `+`, `-`), and delimiters (`{`, `}`, `[`, `]`)
 
-It checks the syntactical structure of the input (in our case is the output of lexical)
+### 2. Syntax Analysis (Parser)
 
-It constructs a Parse tree based of the grammar to check if it was written in the correct syntax 
-
-
-## TO DO 
-
-- [ ] Check the grammar
-- [ ] 3
+- Validates the syntactical structure of the token stream (output from lexical analysis)
+- Constructs a parse tree based on the language grammar
+- Ensures the program follows the correct syntax rules
