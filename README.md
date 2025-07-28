@@ -1,6 +1,4 @@
 # Compiler
-basic-compiler-for-Pyscal
-
 A basic compiler implementation for the PyScal language.
 
 ## Compiler Phases
